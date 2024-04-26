@@ -13,12 +13,12 @@ document.getElementById('submit').addEventListener('click', () => {
     displayPolicy("Optimal", optimalPageReplacement, pages, cols);
     displayPolicy("FIFO", fifoPageReplacement, pages, cols);
     displayPolicy("LRU", lruPageReplacement, pages, cols);
+    displayPolicy("LFU", lfuPageReplacement, pages, cols);
 });
 
 function displayPolicy(policyName, pageReplacementFunction, pages, cols) {
     let table = document.createElement('table');
   
-    // Add the first row with the pages
     let tr = document.createElement('tr');
     for (let i = 0; i < pages.length; i++) {
         let th = document.createElement('th');
@@ -140,6 +140,58 @@ function optimalPageReplacement(pages, cacheSize, table) {
     }
     return pageFaults;
 }
+
+function lfuPageReplacement(pages, cacheSize, table) {
+    console.log("Cache size", cacheSize);
+    let pageFaults = 0;
+    let cache = new Map(); 
+    let cache_state = [];
+    
+    for (let i = 0; i < pages.length; i++) {
+        let page = pages[i];
+        if (!cache.has(page)) {
+            pageFaults++;
+            if (cache.size >= cacheSize) {
+                let minFreq = Infinity;
+                let minFreqPage;
+                cache.forEach((freq, pg) => {
+                    if (freq < minFreq) {
+                        minFreq = freq;
+                        minFreqPage = pg;
+                    }
+                });
+                cache.delete(minFreqPage);
+            }
+            cache.set(page, 1); 
+        } else {
+            let freq = cache.get(page);
+            cache.set(page, freq + 1);
+        }
+        cache_state.push([...cache.keys()]);
+    }
+    
+    for (let i = 0; i < cacheSize; i++) {
+        let temp = [];
+        for (let j = 0; j < pages.length; j++) {
+            if (cache_state[j].length > i) {
+                temp.push(cache_state[j][i]);
+            } else {
+                temp.push('');
+            }
+        }
+        let tr = document.createElement('tr');
+        for (let j = 0; j < temp.length; j++) {
+            let td = document.createElement('td');
+            td.innerHTML = temp[j];
+            tr.appendChild(td);
+        }
+        table.appendChild(tr);
+    }
+    
+    return pageFaults;
+}
+
+
 function lruPageReplacement(pages, cacheSize, table) {
     let pageFaults = 0;
     let cache = [];
